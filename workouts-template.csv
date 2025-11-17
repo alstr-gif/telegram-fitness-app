@@ -1,0 +1,14 @@
+name,type,duration,description,movements,notes,intensity,equipmentNeeded,movementDomains,tags,rxWeight,targetTime,isBenchmark,isHeroWOD
+Fran,For Time,10,21-15-9 reps for time,"21-15-9 Thrusters (43/29 kg)|21-15-9 Pull-ups",Scale: Reduce weight use ring rows,intermediate,fullgym,"weightlifting|gymnastics","benchmark|short|for_time","43/29 kg",Sub 5 minutes,true,false
+Cindy,AMRAP,20,20 minute AMRAP,"5 Pull-ups|10 Push-ups|15 Air Squats",Goal: 15+ rounds for experienced athletes,beginner,bodyweight,"gymnastics|cardio","benchmark|short|metcon",,15+ rounds,true,false
+Example Custom WOD,For Time,25,3 rounds for time,"400m Run|21 Kettlebell Swings (24/16 kg)|12 Pull-ups",Classic CrossFit triplet,intermediate,dumbbells,"cardio|weightlifting|gymnastics",for_time,"24/16 kg",Sub 12 minutes,false,false
+
+
+
+
+
+
+
+
+
+

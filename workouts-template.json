@@ -1,0 +1,70 @@
+[
+  {
+    "name": "Fran",
+    "type": "For Time",
+    "duration": 10,
+    "description": "21-15-9 reps for time",
+    "movements": [
+      "21-15-9 Thrusters (43/29 kg)",
+      "21-15-9 Pull-ups"
+    ],
+    "notes": "Scale: Reduce weight, use ring rows instead of pull-ups",
+    "intensity": "intermediate",
+    "equipmentNeeded": "fullgym",
+    "movementDomains": ["weightlifting", "gymnastics"],
+    "tags": ["benchmark", "short", "for_time"],
+    "rxWeight": "43/29 kg",
+    "targetTime": "Sub 5 minutes",
+    "isBenchmark": true,
+    "isHeroWOD": false
+  },
+  {
+    "name": "Cindy",
+    "type": "AMRAP",
+    "duration": 20,
+    "description": "20 minute AMRAP",
+    "movements": [
+      "5 Pull-ups",
+      "10 Push-ups",
+      "15 Air Squats"
+    ],
+    "notes": "Goal: 15+ rounds for experienced athletes",
+    "intensity": "beginner",
+    "equipmentNeeded": "bodyweight",
+    "movementDomains": ["gymnastics", "cardio"],
+    "tags": ["benchmark", "short", "metcon"],
+    "targetTime": "15+ rounds",
+    "isBenchmark": true,
+    "isHeroWOD": false
+  },
+  {
+    "name": "Example Custom WOD",
+    "type": "For Time",
+    "duration": 25,
+    "description": "3 rounds for time",
+    "movements": [
+      "400m Run",
+      "21 Kettlebell Swings (24/16 kg)",
+      "12 Pull-ups"
+    ],
+    "notes": "Classic CrossFit triplet mixing running, weightlifting, and gymnastics",
+    "intensity": "intermediate",
+    "equipmentNeeded": "dumbbells",
+    "movementDomains": ["cardio", "weightlifting", "gymnastics"],
+    "tags": ["for_time"],
+    "rxWeight": "24/16 kg",
+    "targetTime": "Sub 12 minutes",
+    "isBenchmark": false,
+    "isHeroWOD": false
+  }
+]
+
+
+
+
+
+
+
+
+
+
