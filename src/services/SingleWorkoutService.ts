@@ -106,8 +106,8 @@ export class SingleWorkoutService {
             modalities: crossFitAnalysis.modalityBalance,
           });
           
-          // Get library workouts for AI inspiration
-          const libraryExamples = await this.libraryService.getFormattedForAI(6);
+          // Get library workouts for AI inspiration (reduced from 6 to 3 to save tokens)
+          const libraryExamples = await this.libraryService.getFormattedForAI(3);
           
           const prompt = this.buildSingleWorkoutPrompt(
             request, 
@@ -169,8 +169,8 @@ Always create workouts that are:
         } catch (err) {
           console.log('CrossFit analysis not available, using basic history');
           
-          // Get library workouts for AI inspiration
-          const libraryExamples = await this.libraryService.getFormattedForAI(6);
+          // Get library workouts for AI inspiration (reduced from 6 to 3 to save tokens)
+          const libraryExamples = await this.libraryService.getFormattedForAI(3);
           
           const prompt = this.buildSingleWorkoutPrompt(
             request, 
@@ -375,42 +375,24 @@ ${feedbackContext && (feedbackContext.likedWorkouts.length > 0 || feedbackContex
 **USER'S FEEDBACK HISTORY (Weighted by Recency):**
 
 ${feedbackContext.likedWorkouts.length > 0 ? `
-✅ **LIKED Workouts** (Recent feedback weighted more heavily):
-${feedbackContext.likedWorkouts.slice(0, 8).map((item: any) => {
+✅ **LIKED Workouts** (Top 3 most recent):
+${feedbackContext.likedWorkouts.slice(0, 3).map((item: any) => {
   const name = typeof item === 'string' ? item : item.name;
-  const weight = typeof item === 'string' ? 1.0 : item.weight;
-  const weightLabel = weight >= 1.5 ? '🔥 RECENT' : weight >= 1.0 ? '✅ Recent' : '📅 Older';
-  return `- ${name} (${weightLabel}, weight: ${weight.toFixed(2)})`;
+  return `- ${name}`;
 }).join('\n')}
-→ **CRITICAL:** Recent liked workouts (high weight) indicate CURRENT preferences.
-→ Study recent patterns (last 1-3 days) more than older feedback.
-→ Don't copy exactly, but prioritize similar movement patterns and formats from RECENT workouts.
-→ Older feedback (low weight) is less relevant than recent feedback.
+→ Prioritize similar movement patterns from recent liked workouts.
 ` : ''}
 
 ${feedbackContext.dislikedWorkouts.length > 0 ? `
-❌ **DISLIKED Workouts** (Recent feedback weighted more heavily):
-${feedbackContext.dislikedWorkouts.slice(0, 8).map((item: any) => {
+❌ **DISLIKED Workouts** (Top 3 most recent):
+${feedbackContext.dislikedWorkouts.slice(0, 3).map((item: any) => {
   const name = typeof item === 'string' ? item : item.name;
-  const weight = typeof item === 'string' ? 1.0 : item.weight;
-  const weightLabel = weight >= 1.5 ? '🔥 RECENT' : weight >= 1.0 ? '✅ Recent' : '📅 Older';
-  return `- ${name} (${weightLabel}, weight: ${weight.toFixed(2)})`;
+  return `- ${name}`;
 }).join('\n')}
-→ **CRITICAL:** Recent disliked workouts (high weight) should be AVOIDED more than older ones.
-→ Avoid formats/movements from recent disliked workouts (last 1-3 days).
-→ Older disliked workouts are less relevant - don't over-avoid based on old feedback.
-→ Still vary combinations, but give more weight to recent negative feedback.
+→ Avoid similar formats/movements from recent disliked workouts.
 ` : ''}
 
-**FEEDBACK WEIGHTING SYSTEM:**
-- 🔥 Last 1 day: Weight 2.0 (HIGHEST - most important)
-- ✅ Last 2 days: Weight 1.5 (High priority)
-- ✅ Last 3 days: Weight 1.2 (Medium-high)
-- 📅 Last 5 days: Weight 1.0 (Normal)
-- 📅 Last 7 days: Weight 0.8 (Lower priority)
-- 📅 7+ days: Weight 0.5 (LOWEST - least important)
-
-**IMPORTANT:** Recent feedback (last 1-3 days) reflects CURRENT preferences and should heavily influence today's workout. Older feedback is less relevant.
+**IMPORTANT:** Recent feedback (last 1-3 days) reflects CURRENT preferences and should heavily influence today's workout.
 ` : ''}
 
 ${crossFitAnalysis && crossFitAnalysis.recentWorkouts.length > 0 ? `
@@ -440,120 +422,45 @@ ${crossFitAnalysis.intensityBalance.moderate > 0 ? `- Moderate: ${crossFitAnalys
 ${crossFitAnalysis.intensityBalance.light > 0 ? `- Light: ${crossFitAnalysis.intensityBalance.light}x (conditioning focus, high reps, bodyweight)` : ''}
 ${crossFitAnalysis.intensityBalance.skill > 0 ? `- Skill: ${crossFitAnalysis.intensityBalance.skill}x (technique practice, skill work)` : ''}
 
-**Recent Workouts:**
-${crossFitAnalysis.recentWorkouts.slice(0, 5).map((w: any, i: number) => `
-${i + 1}. "${w.workoutName}" (${w.daysAgo} days ago)
-   - Type: ${w.workoutType}
-   - Time Domain: ${w.timeDomain || 'N/A'}
-   - Energy System: ${w.energySystem || 'N/A'}
-   - Primary Modality: ${w.primaryModality || 'mixed'}
-   - Movement Patterns: ${w.movementPatterns?.join(', ') || 'N/A'}
-   - Intensity: ${w.intensity || 'moderate'}
-   - Movements: ${w.movements?.slice(0, 5).join(', ') || 'N/A'}${w.movements && w.movements.length > 5 ? ` (+ ${w.movements.length - 5} more)` : ''}
-   - Feedback: ${w.liked === true ? '👍 Liked' : w.liked === false ? '👎 Disliked' : 'No feedback'}
+**Recent Workouts (Last 2):**
+${crossFitAnalysis.recentWorkouts.slice(0, 2).map((w: any, i: number) => `
+${i + 1}. "${w.workoutName}" (${w.daysAgo} days ago) - ${w.primaryModality || 'mixed'} - ${w.intensity || 'moderate'}
 `).join('')}
 
-**Movement Frequency (Avoid Overtraining):**
+**Movement Frequency (Top 5 - Avoid if used 2+ times):**
 ${Object.entries(crossFitAnalysis.movementFrequency)
   .sort((a: any, b: any) => b[1] - a[1])
-  .slice(0, 10)
+  .slice(0, 5)
   .map(([movement, count]: [string, any]) => {
     const avoid = count >= 2 ? ' ⚠️ AVOID' : '';
-    return `- ${movement}: ${count}x this week${avoid}`;
+    return `- ${movement}: ${count}x${avoid}`;
   })
   .join('\n')}
 
-**CROSSFIT PROGRAMMING PRINCIPLES FOR TODAY:**
+**CROSSFIT BALANCING (Last 7 days):**
+- Time Domains: Short ${crossFitAnalysis.timeDomainBalance.short}x | Medium ${crossFitAnalysis.timeDomainBalance.medium}x | Long ${crossFitAnalysis.timeDomainBalance.long}x
+- Modalities: Gymnastics ${crossFitAnalysis.modalityBalance.gymnastics}x | Weightlifting ${crossFitAnalysis.modalityBalance.weightlifting}x | Cardio ${crossFitAnalysis.modalityBalance.monoStructural}x | Mixed ${crossFitAnalysis.modalityBalance.mixed}x
+- Intensity: Heavy ${crossFitAnalysis.intensityBalance.heavy}x | Moderate ${crossFitAnalysis.intensityBalance.moderate}x | Light ${crossFitAnalysis.intensityBalance.light}x
 
-🎯 **CRITICAL: Balance All Energy Systems & Modalities**
+**RECOMMENDATIONS:**
+${crossFitAnalysis.recommendations.suggestedTimeDomain ? `- Emphasize **${crossFitAnalysis.recommendations.suggestedTimeDomain}** time domain` : ''}
+${crossFitAnalysis.recommendations.suggestedModality ? `- Emphasize **${crossFitAnalysis.recommendations.suggestedModality}** modality` : ''}
+${crossFitAnalysis.recommendations.suggestedIntensity ? `- Use **${crossFitAnalysis.recommendations.suggestedIntensity}** intensity` : ''}
+${crossFitAnalysis.recommendations.movementsToAvoid.length > 0 ? `- AVOID: ${crossFitAnalysis.recommendations.movementsToAvoid.slice(0, 3).join(', ')}` : ''}
 
-Based on CrossFit methodology, you MUST balance:
-
-1. **TIME DOMAINS (Energy Systems):**
-   - Phosphagen (short, explosive): Used ${crossFitAnalysis.timeDomainBalance.short}x this week
-   - Glycolytic (medium, sustained): Used ${crossFitAnalysis.timeDomainBalance.medium}x this week
-   - Oxidative (long, endurance): Used ${crossFitAnalysis.timeDomainBalance.long}x this week
-   
-   **Recommendation:** Today should emphasize ${crossFitAnalysis.recommendations.suggestedTimeDomain ? `**${crossFitAnalysis.recommendations.suggestedTimeDomain}** time domain` : 'varied time domain'} to balance the energy systems.
-
-2. **MODALITY BALANCE (Movement Domains):**
-   - Gymnastics: ${crossFitAnalysis.modalityBalance.gymnastics}x this week
-   - Weightlifting: ${crossFitAnalysis.modalityBalance.weightlifting}x this week
-   - Mono-Structural (running, rowing, biking): ${crossFitAnalysis.modalityBalance.monoStructural}x this week
-   - Mixed: ${crossFitAnalysis.modalityBalance.mixed}x this week
-   
-   **Recommendation:** ${crossFitAnalysis.recommendations.suggestedModality ? `Consider emphasizing **${crossFitAnalysis.recommendations.suggestedModality}** modality today` : 'Use balanced modality mix'} to ensure all domains are trained.
-
-3. **MOVEMENT PATTERN BALANCE:**
-   - Pulling: ${crossFitAnalysis.movementPatternBalance.pulling}x this week
-   - Pushing: ${crossFitAnalysis.movementPatternBalance.pushing}x this week
-   - Lower Body: ${crossFitAnalysis.movementPatternBalance.lowerBody}x this week
-   - Core: ${crossFitAnalysis.movementPatternBalance.core}x this week
-   - Full Body: ${crossFitAnalysis.movementPatternBalance.fullBody}x this week
-   
-   **Recommendation:** ${crossFitAnalysis.recommendations.suggestedMovementPattern ? `Consider emphasizing **${crossFitAnalysis.recommendations.suggestedMovementPattern}** pattern today` : 'Use balanced movement patterns'} to avoid overtraining specific muscle groups.
-
-4. **INTENSITY BALANCE:**
-   - Heavy: ${crossFitAnalysis.intensityBalance.heavy}x this week (strength days)
-   - Moderate: ${crossFitAnalysis.intensityBalance.moderate}x this week (balanced)
-   - Light: ${crossFitAnalysis.intensityBalance.light}x this week (conditioning days)
-   - Skill: ${crossFitAnalysis.intensityBalance.skill}x this week (technique days)
-   
-   **Recommendation:** ${crossFitAnalysis.recommendations.suggestedIntensity ? `Consider **${crossFitAnalysis.recommendations.suggestedIntensity}** intensity today` : 'Use balanced intensity mix'} to ensure proper recovery and variety.
-
-5. **MOVEMENT VARIATION:**
-   ${crossFitAnalysis.recommendations.movementsToAvoid.length > 0 ? `
-   **AVOID these movements (overused this week):**
-   ${crossFitAnalysis.recommendations.movementsToAvoid.map((m: string) => `- ${m}`).join('\n')}
-   ` : ''}
-   
-   ${crossFitAnalysis.recommendations.movementsToConsider.length > 0 ? `
-   **CONSIDER these movements (underused):**
-   ${crossFitAnalysis.recommendations.movementsToConsider.slice(0, 5).map((m: string) => `- ${m}`).join('\n')}
-   ` : ''}
-
-6. **WORKOUT TYPE VARIATION:**
-   - Last workout types: ${Object.keys(crossFitAnalysis.workoutTypeFrequency).join(', ') || 'None'}
-   ${crossFitAnalysis.recommendations.suggestedWorkoutType ? `- Consider using: **${crossFitAnalysis.recommendations.suggestedWorkoutType}** format today` : ''}
-
-**CROSSFIT PRINCIPLES TO APPLY:**
-- **Constantly Varied**: Never repeat the same workout OR the same mono-structural movements
-- **Functional Movements**: Multi-joint, compound movements
-- **High Intensity**: Relative to individual capacity
-- **Balance All Domains**: Gymnastics, Weightlifting, Mono-Structural (cardio)
-- **Variety in Mono-Structural**: When using cardio machines, vary between running, rowing, bike erg, ski erg, and assault bike - don't default to running!
-- **Balance All Energy Systems**: Phosphagen, Glycolytic, Oxidative
-- **Balance Time Domains**: Short, medium, and long workouts
-
-**IMPORTANT BALANCING RULES:** 
-- **Time Domains**: If last workout was short → Consider medium or long today
-- **Modalities**: If last workout was mono-structural heavy → Include gymnastics or weightlifting today
-- **Movement Patterns**: If last workout was pulling heavy → Focus on pushing or lower body today
-- **Intensity**: Don't do heavy days back-to-back; alternate heavy/light/moderate
-- **Patterns**: Balance pulling vs pushing, upper vs lower body, core work
-- **Mono-Structural Variety**: If last workout had running → Use rowing, bike erg, ski erg, or assault bike today! Vary machines - don't default to running!
-- Always aim for BALANCE across all dimensions: time domains, modalities, movement patterns, and intensity
+**PRINCIPLES:** Constantly varied, balance all domains, vary mono-structural machines (don't default to running!)
 
 ` : workoutHistory && workoutHistory.totalWorkoutsInPeriod > 0 ? `
-**RECENT WORKOUT HISTORY (Last 7 days):**
-${workoutHistory.recentWorkouts.map((w: any, i: number) => `
-${i + 1}. "${w.workoutName}" (${w.daysAgo} days ago)
-   - Type: ${w.workoutType}
-   - Movements: ${w.movements?.slice(0, 5).join(', ') || 'N/A'}
-   - Feedback: ${w.liked === true ? '👍 Liked' : w.liked === false ? '👎 Disliked' : 'No feedback'}
+**RECENT WORKOUT HISTORY (Last 2):**
+${workoutHistory.recentWorkouts.slice(0, 2).map((w: any, i: number) => `
+${i + 1}. "${w.workoutName}" (${w.daysAgo} days ago) - ${w.workoutType}
 `).join('')}
 
-**Movement Frequency:**
-${Object.entries(workoutHistory.movementFrequency)
-  .sort((a: any, b: any) => b[1] - a[1])
-  .slice(0, 10)
-  .map(([movement, count]: [string, any]) => `- ${movement}: ${count}x this week`)
-  .join('\n')}
-
-**Balance Principles:**
-- Avoid movements used 2+ times this week
-- Vary workout types from recent workouts
-- Balance gymnastics, weightlifting, and cardio
+**Avoid movements used 2+ times this week:** ${Object.entries(workoutHistory.movementFrequency)
+  .filter(([_, count]: [string, any]) => count >= 2)
+  .slice(0, 5)
+  .map(([movement]: [string, any]) => movement)
+  .join(', ') || 'None'}
 ` : ''}
 
 **CRITICAL: BLOCK GENERATION LOGIC - ANALYZE WOD MOVEMENTS FIRST**
