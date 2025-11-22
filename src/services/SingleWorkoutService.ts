@@ -106,8 +106,8 @@ export class SingleWorkoutService {
             modalities: crossFitAnalysis.modalityBalance,
           });
           
-          // Get library workouts for AI inspiration (reduced from 6 to 3 to save tokens)
-          const libraryExamples = await this.libraryService.getFormattedForAI(3);
+          // Get library workouts for AI inspiration
+          const libraryExamples = await this.libraryService.getFormattedForAI(6);
           
           const prompt = this.buildSingleWorkoutPrompt(
             request, 
@@ -169,8 +169,8 @@ Always create workouts that are:
         } catch (err) {
           console.log('CrossFit analysis not available, using basic history');
           
-          // Get library workouts for AI inspiration (reduced from 6 to 3 to save tokens)
-          const libraryExamples = await this.libraryService.getFormattedForAI(3);
+          // Get library workouts for AI inspiration
+          const libraryExamples = await this.libraryService.getFormattedForAI(6);
           
           const prompt = this.buildSingleWorkoutPrompt(
             request, 
@@ -375,8 +375,8 @@ ${feedbackContext && (feedbackContext.likedWorkouts.length > 0 || feedbackContex
 **USER'S FEEDBACK HISTORY (Weighted by Recency):**
 
 ${feedbackContext.likedWorkouts.length > 0 ? `
-✅ **LIKED Workouts** (Top 3 most recent):
-${feedbackContext.likedWorkouts.slice(0, 3).map((item: any) => {
+✅ **LIKED Workouts** (Top 5 most recent):
+${feedbackContext.likedWorkouts.slice(0, 5).map((item: any) => {
   const name = typeof item === 'string' ? item : item.name;
   return `- ${name}`;
 }).join('\n')}
@@ -384,8 +384,8 @@ ${feedbackContext.likedWorkouts.slice(0, 3).map((item: any) => {
 ` : ''}
 
 ${feedbackContext.dislikedWorkouts.length > 0 ? `
-❌ **DISLIKED Workouts** (Top 3 most recent):
-${feedbackContext.dislikedWorkouts.slice(0, 3).map((item: any) => {
+❌ **DISLIKED Workouts** (Top 5 most recent):
+${feedbackContext.dislikedWorkouts.slice(0, 5).map((item: any) => {
   const name = typeof item === 'string' ? item : item.name;
   return `- ${name}`;
 }).join('\n')}
@@ -422,8 +422,8 @@ ${crossFitAnalysis.intensityBalance.moderate > 0 ? `- Moderate: ${crossFitAnalys
 ${crossFitAnalysis.intensityBalance.light > 0 ? `- Light: ${crossFitAnalysis.intensityBalance.light}x (conditioning focus, high reps, bodyweight)` : ''}
 ${crossFitAnalysis.intensityBalance.skill > 0 ? `- Skill: ${crossFitAnalysis.intensityBalance.skill}x (technique practice, skill work)` : ''}
 
-**Recent Workouts (Last 2):**
-${crossFitAnalysis.recentWorkouts.slice(0, 2).map((w: any, i: number) => `
+**Recent Workouts (Last 4):**
+${crossFitAnalysis.recentWorkouts.slice(0, 4).map((w: any, i: number) => `
 ${i + 1}. "${w.workoutName}" (${w.daysAgo} days ago) - ${w.primaryModality || 'mixed'} - ${w.intensity || 'moderate'}
 `).join('')}
 
