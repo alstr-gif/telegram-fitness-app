@@ -61,17 +61,13 @@ export class SingleWorkoutService {
 
   /**
    * Check if the model supports response_format json_object
-   * Models that support it: gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo (newer versions)
+   * Only newer GPT-4 models reliably support it
+   * For safety, we'll parse JSON from text response instead
    */
   private supportsJsonObjectFormat(model: string): boolean {
-    const supportedModels = [
-      'gpt-4',
-      'gpt-4-turbo',
-      'gpt-4o',
-      'gpt-3.5-turbo',
-    ];
-    // Check if model starts with any supported model name
-    return supportedModels.some(supported => model.startsWith(supported));
+    // Disable json_object format for now - parse from text instead
+    // This works reliably across all models
+    return false;
   }
 
   async generateSingleWorkout(request: SingleWorkoutRequest): Promise<GeneratedSingleWorkout> {
