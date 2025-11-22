@@ -63,8 +63,8 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
   const [resultScaling, setResultScaling] = useState<'RX' | 'Scaled' | 'Beginner'>('RX');
   const [resultNotes, setResultNotes] = useState('');
   
-  // Phase 3: Collapsible scaling instructions state
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+  // Phase 3: Collapsible scaling instructions state (for future use)
+  const [_expandedExercises, _setExpandedExercises] = useState<Set<string>>(new Set());
 
   const accent = colorScheme.primary;
   const accentDark = colorScheme.dark;
@@ -114,15 +114,16 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
     : withAlpha(textColor, 0.18);
   const inputTextColor = isDarkTheme ? '#ffffff' : textColor;
 
-  const getWodSummary = (block: any, fallbackDescription: string) => {
-    if (!block) return fallbackDescription;
-    if (!block.description) return fallbackDescription;
-    const lines = block.description.split('\n').map((line: string) => line.trim()).filter(Boolean);
-    if (lines.length === 0) return fallbackDescription;
-    const headline = lines[0];
-    const summary = lines.slice(1).join(' ').trim();
-    return summary || headline;
-  };
+  // Helper function for future use (commented to fix build)
+  // const getWodSummary = (block: any, fallbackDescription: string) => {
+  //   if (!block) return fallbackDescription;
+  //   if (!block.description) return fallbackDescription;
+  //   const lines = block.description.split('\n').map((line: string) => line.trim()).filter(Boolean);
+  //   if (lines.length === 0) return fallbackDescription;
+  //   const headline = lines[0];
+  //   const summary = lines.slice(1).join(' ').trim();
+  //   return summary || headline;
+  // };
 
   const getTimeMinutes = () => {
     switch(timeChoice) {

@@ -1,5 +1,7 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { ColorScheme, getColorScheme } from '../utils/colors';
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import { getColorScheme } from '../utils/colors';
+import type { ColorScheme } from '../utils/colors';
 
 interface ColorContextType {
   colorScheme: ColorScheme;
