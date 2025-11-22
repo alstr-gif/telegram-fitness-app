@@ -58,10 +58,10 @@ export class Workout {
   })
   status: WorkoutStatus;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   startedAt?: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   completedAt?: Date;
 
   @Column({ type: 'text', nullable: true })
