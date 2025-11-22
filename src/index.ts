@@ -38,7 +38,8 @@ const startServer = async (): Promise<void> => {
     const app = createApp();
 
     // Start Express server
-    const server = app.listen(env.PORT, () => {
+    // Listen on 0.0.0.0 to accept connections from all network interfaces (required for Railway)
+    const server = app.listen(env.PORT, '0.0.0.0', () => {
       console.log('✅ Server is running');
       console.log(`📡 Port: ${env.PORT}`);
       console.log(`🌍 Environment: ${env.NODE_ENV}`);
