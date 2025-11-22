@@ -22,23 +22,17 @@ export const corsMiddleware = cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) {
-      console.log('✅ CORS: Allowing request with no origin');
       callback(null, true);
       return;
     }
 
-    console.log(`🔍 CORS: Checking origin: ${origin}`);
-    console.log(`🔍 CORS: Allowed origins:`, env.CORS_ORIGIN);
-
     // In production, only allow configured origins
     if (env.NODE_ENV === 'production') {
       if (env.CORS_ORIGIN.includes(origin)) {
-        console.log(`✅ CORS: Allowing request from: ${origin}`);
         callback(null, true);
       } else {
-        console.warn(`❌ CORS: Blocked request from origin: ${origin}`);
-        console.warn(`   Configured origins:`, env.CORS_ORIGIN);
-        // Return false instead of error to avoid 500
+        // Log blocked requests in production for security monitoring
+        console.warn(`CORS: Blocked request from origin: ${origin}`);
         callback(null, false);
       }
     } else {
