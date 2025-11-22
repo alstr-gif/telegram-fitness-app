@@ -1,13 +1,23 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { env } from './env';
+import { User } from '../entities/User';
+import { WorkoutPlan } from '../entities/WorkoutPlan';
+import { Workout } from '../entities/Workout';
+import { Exercise } from '../entities/Exercise';
+import { WorkoutResult } from '../entities/WorkoutResult';
+import { LibraryWorkout } from '../entities/LibraryWorkout';
 
 // Base configuration shared between SQLite and PostgreSQL
 const baseConfig = {
-  synchronize: env.NODE_ENV === 'development', // Only auto-sync in dev
+  synchronize: env.NODE_ENV === 'development',
   logging: env.NODE_ENV === 'development',
-  entities: ['src/entities/**/*.ts'],
-  migrations: ['src/migrations/**/*.ts'],
-  subscribers: ['src/subscribers/**/*.ts'],
+  entities: [User, WorkoutPlan, Workout, Exercise, WorkoutResult, LibraryWorkout],
+  migrations: env.NODE_ENV === 'production'
+    ? ['dist/migrations/**/*.js']
+    : ['src/migrations/**/*.ts'],
+  subscribers: env.NODE_ENV === 'production'
+    ? ['dist/subscribers/**/*.js']
+    : ['src/subscribers/**/*.ts'],
 };
 
 // SQLite configuration (for development)
