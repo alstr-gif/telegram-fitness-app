@@ -59,6 +59,21 @@ export class SingleWorkoutService {
     this.historyAnalyzer = new WorkoutHistoryAnalyzer();
   }
 
+  /**
+   * Check if the model supports response_format json_object
+   * Models that support it: gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo (newer versions)
+   */
+  private supportsJsonObjectFormat(model: string): boolean {
+    const supportedModels = [
+      'gpt-4',
+      'gpt-4-turbo',
+      'gpt-4o',
+      'gpt-3.5-turbo',
+    ];
+    // Check if model starts with any supported model name
+    return supportedModels.some(supported => model.startsWith(supported));
+  }
+
   async generateSingleWorkout(request: SingleWorkoutRequest): Promise<GeneratedSingleWorkout> {
     try {
       // Fetch user feedback and workout history if userId provided
@@ -111,7 +126,7 @@ export class SingleWorkoutService {
           console.log('🏋️ Generating WOD with preferences:', loggedPreferences);
           console.log('📚 Including WOD examples from library database...');
           
-          const completion = await this.openai.chat.completions.create({
+          const completionConfig: any = {
             model: env.OPENAI_MODEL,
             messages: [
               {
@@ -139,8 +154,14 @@ Always create workouts that are:
             ],
             temperature: 0.7, // Reduced for more consistency while maintaining variety
             max_tokens: 3000,
-            response_format: { type: 'json_object' },
-          });
+          };
+
+          // Only add response_format if model supports it
+          if (this.supportsJsonObjectFormat(env.OPENAI_MODEL)) {
+            completionConfig.response_format = { type: 'json_object' };
+          }
+
+          const completion = await this.openai.chat.completions.create(completionConfig);
 
           const responseContent = completion.choices[0]?.message?.content;
           if (!responseContent) {
@@ -168,7 +189,7 @@ Always create workouts that are:
           console.log('🏋️ Generating WOD with preferences:', loggedPreferences);
           console.log('📚 Including WOD examples from library database...');
           
-          const completion = await this.openai.chat.completions.create({
+          const completionConfig: any = {
             model: env.OPENAI_MODEL,
             messages: [
               {
@@ -196,8 +217,14 @@ Always create workouts that are:
             ],
             temperature: 0.7,
             max_tokens: 3000,
-            response_format: { type: 'json_object' },
-          });
+          };
+
+          // Only add response_format if model supports it
+          if (this.supportsJsonObjectFormat(env.OPENAI_MODEL)) {
+            completionConfig.response_format = { type: 'json_object' };
+          }
+
+          const completion = await this.openai.chat.completions.create(completionConfig);
 
           const responseContent = completion.choices[0]?.message?.content;
           if (!responseContent) {
@@ -224,7 +251,7 @@ Always create workouts that are:
       console.log('🏋️ Generating WOD with preferences:', loggedPreferences);
         console.log('📚 Including WOD examples from library database...');
       
-      const completion = await this.openai.chat.completions.create({
+      const completionConfig: any = {
         model: env.OPENAI_MODEL,
         messages: [
           {
@@ -250,10 +277,16 @@ Always create workouts that are:
             content: prompt,
           },
         ],
-          temperature: 0.7,
+        temperature: 0.7,
         max_tokens: 3000,
-        response_format: { type: 'json_object' },
-      });
+      };
+
+      // Only add response_format if model supports it
+      if (this.supportsJsonObjectFormat(env.OPENAI_MODEL)) {
+        completionConfig.response_format = { type: 'json_object' };
+      }
+
+      const completion = await this.openai.chat.completions.create(completionConfig);
 
       const responseContent = completion.choices[0]?.message?.content;
       if (!responseContent) {

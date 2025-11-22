@@ -20,15 +20,29 @@ export class LibraryWorkoutSanityChecker {
     });
   }
 
+  /**
+   * Check if the model supports response_format json_object
+   * Models that support it: gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo (newer versions)
+   */
+  private supportsJsonObjectFormat(model: string): boolean {
+    const supportedModels = [
+      'gpt-4',
+      'gpt-4-turbo',
+      'gpt-4o',
+      'gpt-3.5-turbo',
+    ];
+    // Check if model starts with any supported model name
+    return supportedModels.some(supported => model.startsWith(supported));
+  }
+
   async review(workout: any, context?: SanityCheckContext): Promise<any | null> {
     try {
       const prompt = this.buildPrompt(workout, context);
 
-      const completion = await this.openai.chat.completions.create({
+      const completionConfig: any = {
         model: env.OPENAI_MODEL,
         temperature: 0.2,
         max_tokens: 2000,
-        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
@@ -39,7 +53,14 @@ export class LibraryWorkoutSanityChecker {
             content: prompt,
           },
         ],
-      });
+      };
+
+      // Only add response_format if model supports it
+      if (this.supportsJsonObjectFormat(env.OPENAI_MODEL)) {
+        completionConfig.response_format = { type: 'json_object' };
+      }
+
+      const completion = await this.openai.chat.completions.create(completionConfig);
 
       const responseContent = completion.choices[0]?.message?.content;
       if (!responseContent) {
