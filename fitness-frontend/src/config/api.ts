@@ -23,7 +23,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('🔍 API Request:', config.method?.toUpperCase(), config.baseURL + config.url);
+  const fullUrl = config.baseURL && config.url ? config.baseURL + config.url : 'unknown';
+  console.log('🔍 API Request:', config.method?.toUpperCase(), fullUrl);
   return config;
 });
 
@@ -31,13 +32,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const fullUrl = error.config?.baseURL && error.config?.url 
+      ? error.config.baseURL + error.config.url 
+      : 'unknown';
     console.error('❌ API Error:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,
       url: error.config?.url,
       baseURL: error.config?.baseURL,
-      fullURL: error.config?.baseURL + error.config?.url,
+      fullURL: fullUrl,
     });
     return Promise.reject(error);
   }
