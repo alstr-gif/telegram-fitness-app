@@ -40,7 +40,7 @@ export class WorkoutPlan {
   workouts: Workout[];
 
   @Column({
-    type: 'simple-enum',
+    type: 'varchar',
     enum: PlanStatus,
     default: PlanStatus.ACTIVE,
   })

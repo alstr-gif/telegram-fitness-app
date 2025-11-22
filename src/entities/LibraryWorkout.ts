@@ -28,8 +28,7 @@ export class LibraryWorkout {
   name: string;
 
   @Column({
-    type: 'simple-enum',
-    enum: ['AMRAP', 'EMOM', 'For Time', 'Chipper', 'Rounds', 'Tabata', 'Custom'],
+    type: 'varchar',
   })
   type: WorkoutType;
 
@@ -47,13 +46,12 @@ export class LibraryWorkout {
 
   // Metadata for filtering and smart selection
   @Column({
-    type: 'simple-enum',
-    enum: ['beginner', 'intermediate', 'advanced'],
+    type: 'varchar',
     nullable: true,
   })
   intensity?: IntensityLevel;
 
-  @Column({ type: 'simple-enum', nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   equipmentNeeded?: EquipmentNeeded;
 
   @Column({ type: 'simple-array', nullable: true })
@@ -111,6 +109,7 @@ export class LibraryWorkout {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
 
 
 

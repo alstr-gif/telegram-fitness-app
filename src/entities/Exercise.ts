@@ -35,7 +35,7 @@ export class Exercise {
   description?: string;
 
   @Column({
-    type: 'simple-enum',
+    type: 'varchar',
     enum: ExerciseType,
     default: ExerciseType.STRENGTH,
   })

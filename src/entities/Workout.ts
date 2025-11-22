@@ -52,7 +52,7 @@ export class Workout {
   exercises: Exercise[];
 
   @Column({
-    type: 'simple-enum',
+    type: 'varchar',
     enum: WorkoutStatus,
     default: WorkoutStatus.SCHEDULED,
   })

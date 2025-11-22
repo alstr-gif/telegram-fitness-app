@@ -44,14 +44,14 @@ export class User {
 
   // Fitness Profile
   @Column({
-    type: 'simple-enum',
+    type: 'varchar',
     enum: FitnessLevel,
     default: FitnessLevel.BEGINNER,
   })
   fitnessLevel: FitnessLevel;
 
   @Column({
-    type: 'simple-enum',
+    type: 'varchar',
     enum: FitnessGoal,
     default: FitnessGoal.GENERAL_FITNESS,
   })
