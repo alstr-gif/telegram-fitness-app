@@ -8,10 +8,9 @@ import { WorkoutResult } from '../entities/WorkoutResult';
 import { LibraryWorkout } from '../entities/LibraryWorkout';
 
 // Base configuration shared between SQLite and PostgreSQL
-// Temporarily enable synchronize in production to create tables
-// TODO: Disable after tables are created and set up migrations
+// Synchronize is disabled in production for safety - use migrations instead
 const baseConfig = {
-  synchronize: true, // Temporarily enabled to create tables - will disable after first run
+  synchronize: env.NODE_ENV === 'development', // Only auto-sync in development
   logging: env.NODE_ENV === 'development',
   entities: [User, WorkoutPlan, Workout, Exercise, WorkoutResult, LibraryWorkout],
   migrations: env.NODE_ENV === 'production'
