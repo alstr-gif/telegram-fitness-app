@@ -63,8 +63,7 @@ export class TelegramBotService {
         });
 
         // Clean welcome message with WebApp button
-        const welcomeMessage = `🏋️ Welcome to AI Fitness Coach!\n\n` +
-          `Your personalized workout companion is ready.`;
+        const welcomeMessage = `Welcome to Living To Peak - fitness for people who don't have time to waste. Intelligent training. Proven by real experience. **No hype, no bullshit. Just work.** Tap below to begin your journey.`;
 
         const keyboard: any = {
           inline_keyboard: [],
@@ -83,6 +82,7 @@ export class TelegramBotService {
         }
 
         await this.bot.sendMessage(chatId, welcomeMessage, {
+          parse_mode: 'Markdown',
           reply_markup: keyboard,
         });
       } catch (error) {
