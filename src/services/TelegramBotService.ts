@@ -63,7 +63,7 @@ export class TelegramBotService {
         });
 
         // Clean welcome message with WebApp button
-        const welcomeMessage = `Welcome to Living To Peak - fitness for people who don't have time to waste. Intelligent training. Proven by real experience. **No hype, no bullshit. Just work.** Tap below to begin your journey.`;
+        const welcomeMessage = `Welcome to Living To Peak - fitness for people who don't have time to waste.\n\nIntelligent training. Proven by real experience.\n\n**No hype, no bullshit. Just work.**\n\nTap below to begin your journey.`;
 
         const keyboard: any = {
           inline_keyboard: [],
