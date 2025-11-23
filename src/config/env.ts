@@ -27,6 +27,7 @@ interface EnvConfig {
   // Telegram
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_URL?: string;
+  TELEGRAM_FRONTEND_URL?: string;
   
   // CORS
   CORS_ORIGIN: string[];
@@ -54,6 +55,7 @@ const getEnvConfig = (): EnvConfig => {
     
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
     TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
+    TELEGRAM_FRONTEND_URL: process.env.TELEGRAM_FRONTEND_URL,
     
     CORS_ORIGIN: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
   };

@@ -62,21 +62,29 @@ export class TelegramBotService {
           lastName: msg.from?.last_name,
         });
 
-        await this.bot.sendMessage(
-          chatId,
-          `🏋️ Welcome to AI Fitness Coach!\n\n` +
-          `I'll help you create personalized workout plans based on your goals and preferences.\n\n` +
-          `Let's get started! Use /setup to configure your fitness profile.`,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: '⚙️ Setup Profile', callback_data: 'setup_profile' }],
-                [{ text: '💪 Generate Workout Plan', callback_data: 'generate_plan' }],
-                [{ text: '📅 My Workouts', callback_data: 'my_workouts' }],
-              ],
+        // Clean welcome message with WebApp button
+        const welcomeMessage = `🏋️ Welcome to AI Fitness Coach!\n\n` +
+          `Your personalized workout companion is ready.`;
+
+        const keyboard: any = {
+          inline_keyboard: [],
+        };
+
+        // Add WebApp button if frontend URL is configured
+        if (env.TELEGRAM_FRONTEND_URL) {
+          keyboard.inline_keyboard.push([
+            {
+              text: '🚀 Launch App',
+              web_app: {
+                url: env.TELEGRAM_FRONTEND_URL,
+              },
             },
-          }
-        );
+          ]);
+        }
+
+        await this.bot.sendMessage(chatId, welcomeMessage, {
+          reply_markup: keyboard,
+        });
       } catch (error) {
         console.error('Error in /start command:', error);
         await this.bot.sendMessage(chatId, '❌ An error occurred. Please try again.');
