@@ -394,7 +394,7 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
         </div>
 
         <h2 style={{ margin: '0 0 10px 0', color: textColor, fontSize: '22px', lineHeight: '1.3' }}>
-          What time domain you want to attack today?
+          What time domain you want to attack today in your main workout?
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
