@@ -389,7 +389,7 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
             Question 1 of 4
           </div>
           <div style={{ color: accent, fontSize: '12px' }}>
-            Let's build your perfect workout
+            Choose time domain for your main workout. Note that total session will be 50 to 75 minutes.
           </div>
         </div>
 

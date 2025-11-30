@@ -558,3 +558,5 @@ const formatExercise = (exercise: any): FormattedExercise => {
 - Maintain backward compatibility with existing workout data structure
 
 
+
+

@@ -217,3 +217,5 @@ The feature is **ready to use**! Just:
 
 The default donation amount is **10 Telegram Stars**. Users can support your app with a single click! ⭐
 
+
+
