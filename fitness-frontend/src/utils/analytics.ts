@@ -25,6 +25,9 @@ let analyticsInitialized = false;
  * @returns Promise that resolves when initialization is complete
  */
 export const initializeAnalytics = async (apiKey?: string, identifier?: string): Promise<void> => {
+  // 🔍 DEBUG: Log that function was called
+  console.log('🔍 [Analytics] initializeAnalytics called');
+  
   if (analyticsInitialized) {
     console.warn('Analytics SDK already initialized');
     return;
@@ -34,17 +37,29 @@ export const initializeAnalytics = async (apiKey?: string, identifier?: string):
   const key = apiKey || import.meta.env.VITE_TON_ANALYTICS_API_KEY;
   const appName = identifier || import.meta.env.VITE_TON_ANALYTICS_IDENTIFIER;
 
+  // 🔍 DEBUG: Log environment variable status
+  console.log('🔍 [Analytics] Environment Check:', {
+    hasKeyParam: !!apiKey,
+    hasIdentifierParam: !!identifier,
+    envKeyExists: !!import.meta.env.VITE_TON_ANALYTICS_API_KEY,
+    envIdentifierExists: !!import.meta.env.VITE_TON_ANALYTICS_IDENTIFIER,
+    keyValue: key ? `${key.substring(0, 10)}...` : 'MISSING',
+    appNameValue: appName || 'MISSING',
+    allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('ANALYTICS')),
+  });
+
   if (!key) {
-    console.warn('Analytics API key not provided. Analytics will not be initialized.');
+    console.warn('⚠️ Analytics API key not provided. Analytics will not be initialized.');
     return;
   }
 
   if (!appName) {
-    console.warn('Analytics Identifier not provided. Analytics will not be initialized.');
+    console.warn('⚠️ Analytics Identifier not provided. Analytics will not be initialized.');
     return;
   }
 
   try {
+    console.log('🔄 [Analytics] Initializing SDK...');
     // Initialize Telegram Analytics SDK
     // Must await this before rendering the app
     await TelegramAnalytics.init({
@@ -123,4 +138,3 @@ export const trackPayment = (amount: string, transactionHash: string): void => {
 export const isAnalyticsInitialized = (): boolean => {
   return analyticsInitialized;
 };
-
