@@ -22,8 +22,9 @@ let analyticsInitialized = false;
  * Initialize Analytics SDK
  * @param apiKey - Analytics API key from TON Builders
  * @param identifier - Analytics Identifier (project name) from TON Builders
+ * @returns Promise that resolves when initialization is complete
  */
-export const initializeAnalytics = (apiKey?: string, identifier?: string): void => {
+export const initializeAnalytics = async (apiKey?: string, identifier?: string): Promise<void> => {
   if (analyticsInitialized) {
     console.warn('Analytics SDK already initialized');
     return;
@@ -45,19 +46,18 @@ export const initializeAnalytics = (apiKey?: string, identifier?: string): void 
 
   try {
     // Initialize Telegram Analytics SDK
-    // Note: init() returns a Promise, so we handle it properly
-    TelegramAnalytics.init({
+    // Must await this before rendering the app
+    await TelegramAnalytics.init({
       token: key,
       appName: appName,
       env: 'PROD', // Use 'PROD' for mainnet, 'STG' for staging
-    }).then(() => {
-      analyticsInitialized = true;
-      console.log('✅ Telegram Analytics SDK initialized successfully');
-    }).catch((error) => {
-      console.error('❌ Failed to initialize Analytics SDK:', error);
     });
+    
+    analyticsInitialized = true;
+    console.log('✅ Telegram Analytics SDK initialized successfully');
   } catch (error) {
-    console.error('❌ Error setting up Analytics SDK:', error);
+    console.error('❌ Failed to initialize Analytics SDK:', error);
+    throw error; // Re-throw so caller knows it failed
   }
 };
 
