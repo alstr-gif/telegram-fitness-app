@@ -64,10 +64,10 @@ export const initializeAnalytics = async (apiKey?: string, identifier?: string):
  * Track an event
  * Note: Most events are tracked automatically by the SDK.
  * This function is kept for logging purposes and future manual tracking if needed.
- * @param eventName - Name of the event
- * @param eventData - Additional event data
+ * @param _eventName - Name of the event
+ * @param _eventData - Additional event data
  */
-export const trackEvent = (eventName: string, eventData?: Record<string, any>): void => {
+export const trackEvent = (_eventName: string, _eventData?: Record<string, any>): void => {
   if (!analyticsInitialized) {
     console.warn('Analytics not initialized. Call initializeAnalytics() first.');
     return;
