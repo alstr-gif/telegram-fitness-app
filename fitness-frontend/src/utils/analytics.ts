@@ -25,9 +25,6 @@ let analyticsInitialized = false;
  * @returns Promise that resolves when initialization is complete
  */
 export const initializeAnalytics = async (apiKey?: string, identifier?: string): Promise<void> => {
-  // 🔍 DEBUG: Log that function was called
-  console.log('🔍 [Analytics] initializeAnalytics called');
-  
   if (analyticsInitialized) {
     console.warn('Analytics SDK already initialized');
     return;
@@ -36,17 +33,6 @@ export const initializeAnalytics = async (apiKey?: string, identifier?: string):
   // Get API key from parameter or environment variable
   const key = apiKey || import.meta.env.VITE_TON_ANALYTICS_API_KEY;
   const appName = identifier || import.meta.env.VITE_TON_ANALYTICS_IDENTIFIER;
-
-  // 🔍 DEBUG: Log environment variable status
-  console.log('🔍 [Analytics] Environment Check:', {
-    hasKeyParam: !!apiKey,
-    hasIdentifierParam: !!identifier,
-    envKeyExists: !!import.meta.env.VITE_TON_ANALYTICS_API_KEY,
-    envIdentifierExists: !!import.meta.env.VITE_TON_ANALYTICS_IDENTIFIER,
-    keyValue: key ? `${key.substring(0, 10)}...` : 'MISSING',
-    appNameValue: appName || 'MISSING',
-    allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('ANALYTICS')),
-  });
 
   if (!key) {
     console.warn('⚠️ Analytics API key not provided. Analytics will not be initialized.');
@@ -59,7 +45,6 @@ export const initializeAnalytics = async (apiKey?: string, identifier?: string):
   }
 
   try {
-    console.log('🔄 [Analytics] Initializing SDK...');
     // Initialize Telegram Analytics SDK
     // Must await this before rendering the app
     await TelegramAnalytics.init({
@@ -69,7 +54,6 @@ export const initializeAnalytics = async (apiKey?: string, identifier?: string):
     });
     
     analyticsInitialized = true;
-    console.log('✅ Telegram Analytics SDK initialized successfully');
   } catch (error) {
     console.error('❌ Failed to initialize Analytics SDK:', error);
     throw error; // Re-throw so caller knows it failed
@@ -91,8 +75,6 @@ export const trackEvent = (eventName: string, eventData?: Record<string, any>): 
 
   // Note: Telegram Analytics SDK tracks most events automatically
   // This is for logging and potential future manual tracking
-  console.log('📊 Analytics Event:', eventName, eventData);
-  
   // If manual tracking is needed in the future, it can be added here
   // The SDK automatically tracks: app launches, TON Connect interactions, etc.
 };

@@ -9,18 +9,13 @@ import { initializeAnalytics } from './utils/analytics';
 
 // Initialize Analytics SDK BEFORE rendering
 const initApp = async () => {
-  console.log('🚀 [App] Starting initialization...');
-  
   try {
-    console.log('🔄 [App] Calling initializeAnalytics...');
     await initializeAnalytics();
-    console.log('✅ [App] Analytics initialized, starting app...');
   } catch (error) {
-    console.error('❌ [App] Failed to initialize analytics:', error);
+    console.error('Failed to initialize analytics:', error);
     // Continue with app even if analytics fails
   }
 
-  console.log('🎨 [App] Rendering React app...');
   const rootElement = document.getElementById('root')!;
   const root = createRoot(rootElement);
   root.render(
