@@ -584,6 +584,32 @@ export class TelegramBotService {
 
   public start(): void {
     console.log('✅ Telegram bot is running...');
+    this.setMenuButton();
+  }
+
+  private async setMenuButton(): Promise<void> {
+    try {
+      if (!env.TELEGRAM_FRONTEND_URL) {
+        console.warn('⚠️  TELEGRAM_FRONTEND_URL not set. Menu button will not be configured.');
+        return;
+      }
+
+      // Set menu button for all chats
+      await this.bot.setChatMenuButton({
+        menu_button: {
+          type: 'web_app',
+          text: 'Open',
+          web_app: {
+            url: env.TELEGRAM_FRONTEND_URL,
+          },
+        },
+      });
+
+      console.log('✅ Menu button configured successfully');
+    } catch (error) {
+      console.error('❌ Failed to set menu button:', error);
+      // Don't throw - bot should still work without menu button
+    }
   }
 
   public stop(): void {
