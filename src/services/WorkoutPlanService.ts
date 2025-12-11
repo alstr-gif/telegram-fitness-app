@@ -77,16 +77,17 @@ export class WorkoutPlanService {
   ): Promise<void> {
     const startDate = new Date(plan.startDate);
     
-    for (const [index, generatedWorkout] of generatedPlan.workouts.entries()) {
+    // OPTIMIZATION: Prepare all workouts first, then bulk insert
+    const workouts = generatedPlan.workouts.map((generatedWorkout, index) => {
       // Calculate the scheduled date
-      const weekNumber = Math.floor(index / plan.metadata?.preferences?.duration || 3);
+      const weekNumber = Math.floor(index / (plan.metadata?.preferences?.duration || 3));
       const scheduledDate = this.calculateWorkoutDate(
         startDate,
         generatedWorkout.dayOfWeek,
         weekNumber
       );
 
-      const workout = this.workoutRepository.create({
+      return this.workoutRepository.create({
         planId: plan.id,
         name: generatedWorkout.name,
         description: generatedWorkout.description,
@@ -96,28 +97,38 @@ export class WorkoutPlanService {
         focus: generatedWorkout.focus,
         status: WorkoutStatus.SCHEDULED,
       });
+    });
 
-      const savedWorkout = await this.workoutRepository.save(workout);
+    // Bulk insert all workouts at once
+    const savedWorkouts = await this.workoutRepository.save(workouts);
 
-      // Create exercises
-      for (const generatedExercise of generatedWorkout.exercises) {
-        const exercise = this.exerciseRepository.create({
-          workoutId: savedWorkout.id,
-          name: generatedExercise.name,
-          description: generatedExercise.description,
-          type: generatedExercise.type as any,
-          sets: generatedExercise.sets,
-          reps: generatedExercise.reps,
-          duration: generatedExercise.duration,
-          weight: generatedExercise.weight,
-          restTime: generatedExercise.restTime,
-          instructions: generatedExercise.instructions,
-          muscleGroups: generatedExercise.muscleGroups,
-          order: generatedExercise.order,
-        });
+    // OPTIMIZATION: Prepare all exercises, then bulk insert
+    const allExercises: Exercise[] = [];
+    savedWorkouts.forEach((savedWorkout, index) => {
+      const generatedWorkout = generatedPlan.workouts[index];
+      generatedWorkout.exercises.forEach(generatedExercise => {
+        allExercises.push(
+          this.exerciseRepository.create({
+            workoutId: savedWorkout.id,
+            name: generatedExercise.name,
+            description: generatedExercise.description,
+            type: generatedExercise.type as any,
+            sets: generatedExercise.sets,
+            reps: generatedExercise.reps,
+            duration: generatedExercise.duration,
+            weight: generatedExercise.weight,
+            restTime: generatedExercise.restTime,
+            instructions: generatedExercise.instructions,
+            muscleGroups: generatedExercise.muscleGroups,
+            order: generatedExercise.order,
+          })
+        );
+      });
+    });
 
-        await this.exerciseRepository.save(exercise);
-      }
+    // Bulk insert all exercises at once
+    if (allExercises.length > 0) {
+      await this.exerciseRepository.save(allExercises);
     }
   }
 

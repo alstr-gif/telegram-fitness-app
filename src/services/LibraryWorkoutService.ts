@@ -257,59 +257,27 @@ export class LibraryWorkoutService {
 
   /**
    * Get random workouts for AI inspiration
+   * OPTIMIZED: Uses popularity-based selection with shuffle for better performance
    */
   async getRandomForAI(count: number = 4): Promise<LibraryWorkout[]> {
-    const selected: LibraryWorkout[] = [];
-    const seenIds = new Set<string>();
-    const maxAttempts = 5;
+    // OPTIMIZATION: Get popular workouts (better quality examples) and shuffle in memory
+    // This is much faster than ORDER BY RANDOM() which scans entire table
+    const batchSize = count * 3; // Get 3x more for variety after filtering
 
-    for (let attempt = 0; attempt < maxAttempts && selected.length < count; attempt++) {
-      const remaining = count - selected.length;
-      const batchSize = Math.max(remaining * 3, count); // fetch extras for filtering
+    const workouts = await this.repository.find({
+      where: { isActive: true },
+      order: { popularityScore: 'DESC' },
+      take: batchSize,
+    });
 
-      const batch = await this.repository
-        .createQueryBuilder('workout')
-        .where('workout.isActive = :isActive', { isActive: true })
-        .orderBy('RANDOM()')
-        .limit(batchSize)
-        .getMany();
+    // Filter out Cindy patterns
+    const filtered = workouts.filter(w => !this.isCindyPattern(w));
 
-      for (const workout of batch) {
-        if (seenIds.has(workout.id)) continue;
-        seenIds.add(workout.id);
+    // Shuffle in memory (much faster than database RANDOM())
+    const shuffled = this.shuffleArray([...filtered]);
 
-        if (this.isCindyPattern(workout)) {
-          continue; // resample when classic Cindy pattern is detected
-        }
-
-        selected.push(workout);
-        if (selected.length === count) {
-          break;
-        }
-      }
-    }
-
-    if (selected.length < count) {
-      // As a fallback, fetch additional workouts (still skipping Cindy-style patterns)
-      const fallback = await this.repository
-        .createQueryBuilder('workout')
-        .where('workout.isActive = :isActive', { isActive: true })
-        .orderBy('RANDOM()')
-        .limit(count - selected.length)
-        .getMany();
-
-      for (const workout of fallback) {
-        if (selected.find(w => w.id === workout.id)) continue;
-        if (this.isCindyPattern(workout)) continue;
-
-        selected.push(workout);
-        if (selected.length === count) {
-          break;
-        }
-      }
-    }
-
-    return selected;
+    // Return requested count
+    return shuffled.slice(0, count);
   }
 
   /**

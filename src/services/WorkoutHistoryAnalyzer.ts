@@ -97,7 +97,27 @@ export class WorkoutHistoryAnalyzer {
    */
   async analyzeHistory(userId: string, days: number = 7): Promise<CrossFitAnalysis> {
     const history = await this.resultService.getRecentWorkoutHistory(userId, days);
-    
+    return this.analyzeHistoryFromData(history);
+  }
+
+  /**
+   * Analyze workout history from pre-fetched data (optimized - avoids duplicate query)
+   */
+  analyzeHistoryFromData(history: {
+    recentWorkouts: Array<{
+      workoutName: string;
+      workoutType: string;
+      date: Date;
+      daysAgo: number;
+      movements?: string[];
+      focus?: string;
+      liked?: boolean;
+      duration?: number;
+    }>;
+    movementFrequency: { [movement: string]: number };
+    workoutTypeFrequency: { [type: string]: number };
+    totalWorkoutsInPeriod: number;
+  }): CrossFitAnalysis {
     // Initialize counters
     const timeDomainBalance = { short: 0, medium: 0, long: 0 };
     const energySystemBalance = { phosphagen: 0, glycolytic: 0, oxidative: 0 };

@@ -77,37 +77,45 @@ export class SingleWorkoutService {
       let workoutHistory = null;
       
       if (request.userId) {
+        // OPTIMIZATION: Run all independent queries in parallel
         try {
-          feedbackContext = await this.resultService.getUserFeedbackSummary(request.userId, 10);
-          console.log('📊 User feedback loaded:', {
-            liked: feedbackContext.likedWorkouts.length,
-            disliked: feedbackContext.dislikedWorkouts.length,
-          });
-        } catch (err) {
-          console.log('No previous feedback available');
-        }
+          const [feedbackResult, historyResult, libraryExamples] = await Promise.all([
+            this.resultService.getUserFeedbackSummary(request.userId, 10).catch(() => null),
+            this.resultService.getRecentWorkoutHistory(request.userId, 7).catch(() => null),
+            this.libraryService.getFormattedForAI(6), // Library examples don't depend on userId
+          ]);
 
-        try {
-          workoutHistory = await this.resultService.getRecentWorkoutHistory(request.userId, 7);
-          console.log('📅 Workout history loaded:', {
-            totalWorkouts: workoutHistory.totalWorkoutsInPeriod,
-            uniqueMovements: Object.keys(workoutHistory.movementFrequency).length,
-          });
-        } catch (err) {
-          console.log('No previous workout history available');
-        }
+          feedbackContext = feedbackResult;
+          workoutHistory = historyResult;
 
-        // Get enhanced CrossFit methodology analysis
-        try {
-          const crossFitAnalysis = await this.historyAnalyzer.analyzeHistory(request.userId, 7);
-          console.log('📊 CrossFit methodology analysis:', {
-            timeDomains: crossFitAnalysis.timeDomainBalance,
-            energySystems: crossFitAnalysis.energySystemBalance,
-            modalities: crossFitAnalysis.modalityBalance,
-          });
-          
-          // Get library workouts for AI inspiration
-          const libraryExamples = await this.libraryService.getFormattedForAI(6);
+          if (feedbackContext) {
+            console.log('📊 User feedback loaded:', {
+              liked: feedbackContext.likedWorkouts.length,
+              disliked: feedbackContext.dislikedWorkouts.length,
+            });
+          }
+
+          if (workoutHistory) {
+            console.log('📅 Workout history loaded:', {
+              totalWorkouts: workoutHistory.totalWorkoutsInPeriod,
+              uniqueMovements: Object.keys(workoutHistory.movementFrequency).length,
+            });
+          }
+
+          // Get enhanced CrossFit methodology analysis from pre-fetched data
+          let crossFitAnalysis = null;
+          if (workoutHistory) {
+            try {
+              crossFitAnalysis = this.historyAnalyzer.analyzeHistoryFromData(workoutHistory);
+              console.log('📊 CrossFit methodology analysis:', {
+                timeDomains: crossFitAnalysis.timeDomainBalance,
+                energySystems: crossFitAnalysis.energySystemBalance,
+                modalities: crossFitAnalysis.modalityBalance,
+              });
+            } catch (err) {
+              console.log('CrossFit analysis failed, continuing without it');
+            }
+          }
           
           const prompt = this.buildSingleWorkoutPrompt(
             request, 
@@ -167,68 +175,9 @@ Always create workouts that are:
           const workout = this.parseWorkoutResponse(responseContent);
           return workout;
         } catch (err) {
-          console.log('CrossFit analysis not available, using basic history');
-          
-          // Get library workouts for AI inspiration
-          const libraryExamples = await this.libraryService.getFormattedForAI(6);
-          
-          const prompt = this.buildSingleWorkoutPrompt(
-            request, 
-            feedbackContext, 
-            workoutHistory, 
-            libraryExamples,
-            undefined
-          );
-          
-          // Log preferences without fitnessLevel
-          const { fitnessLevel, ...loggedPreferences } = request;
-          console.log('🏋️ Generating WOD with preferences:', loggedPreferences);
-          console.log('📚 Including WOD examples from library database...');
-          
-          const completionConfig: any = {
-            model: env.OPENAI_MODEL,
-            messages: [
-              {
-                role: 'system',
-                content: `You are an expert CrossFit coach specializing in creating engaging, challenging WODs (Workouts of the Day).
-
-Your expertise:
-- Designing varied, high-intensity functional fitness workouts
-- Combining gymnastics, weightlifting, and metabolic conditioning
-- Creating AMRAPs, EMOMs, For Time, Chipper, and Tabata workouts
-- Scaling appropriately while maintaining intensity
-- Using proper CrossFit terminology and movement standards
-
-Always create workouts that are:
-- Fun and engaging
-- Appropriately challenging
-- Safe and scalable
-- Varied in movement patterns
-- Time-efficient and effective`,
-              },
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 3000,
-          };
-
-          // Only add response_format if model supports it
-          if (this.supportsJsonObjectFormat(env.OPENAI_MODEL)) {
-            completionConfig.response_format = { type: 'json_object' };
-          }
-
-          const completion = await this.openai.chat.completions.create(completionConfig);
-
-          const responseContent = completion.choices[0]?.message?.content;
-          if (!responseContent) {
-            throw new Error('No response from OpenAI');
-          }
-
-          const workout = this.parseWorkoutResponse(responseContent);
-          return workout;
+          console.log('Error in parallel queries, falling back to sequential:', err);
+          // Fallback to sequential if parallel fails
+          throw err;
         }
       } else {
         // No userId - generate without history
