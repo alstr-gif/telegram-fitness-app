@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTelegram } from './hooks/useTelegram';
+import { useTonConnect } from './hooks/useTonConnect';
 import { authService } from './services/auth';
 import { resultsService } from './services/results';
-import { paymentService } from './services/payment';
 import { WorkoutGeneration } from './pages/WorkoutGeneration';
 import { getColorScheme } from './utils/colors';
+import { trackPayment } from './utils/analytics';
 import './App.css';
 
 /**
@@ -58,8 +59,12 @@ const formatExerciseWithReps = (name: string, reps?: string | number | null): st
 
 type View = 'home' | 'workout' | 'statistics';
 
+// TON wallet address for donations - should be set via environment variable in production
+const DONATION_WALLET_ADDRESS = import.meta.env.VITE_TON_DONATION_WALLET || 'EQD__________________________________________0vo'; // Placeholder - update with your wallet address
+
 function App() {
   const { user, isReady, WebApp, themeParams } = useTelegram();
+  const { connected, walletAddress, connectWallet, sendTransaction, connecting: walletConnecting } = useTonConnect();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +74,7 @@ function App() {
   const [workoutResults, setWorkoutResults] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
   const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   
   // Get color scheme
   const colorScheme = useMemo(() => getColorScheme(themeParams), [themeParams]);
@@ -892,69 +898,123 @@ function App() {
                     textAlign: 'center',
             lineHeight: '1.4'
           }}>
-            We believe fitness should be free and fun. If you enjoy your workouts, send us a few Stars — it helps us grow 🌱
+            We believe fitness should be free and fun. If you enjoy your workouts, send us some TON — it helps us grow 🌱
           </p>
           
-          {/* Button */}
+          {/* TON Payment Button */}
           <button 
             className="pressable"
             onClick={async () => {
               try {
-                if (!userTelegramId) {
-                  console.error('Telegram ID not available');
+                setPaymentProcessing(true);
+
+                // If wallet is not connected, connect it first
+                if (!connected) {
+                  try {
+                    await connectWallet();
+                    // After connecting, user needs to click again to send payment
+                    setPaymentProcessing(false);
+                    return;
+                  } catch (connectError: any) {
+                    const errorMsg = connectError.message || 'Failed to connect wallet. Please try again.';
+                    if (WebApp?.showAlert) {
+                      WebApp.showAlert(errorMsg);
+                    } else {
+                      alert(errorMsg);
+                    }
+                    setPaymentProcessing(false);
+                    return;
+                  }
+                }
+
+                // Check wallet is actually connected before sending
+                if (!connected || !walletAddress) {
+                  if (WebApp?.showAlert) {
+                    WebApp.showAlert('Please connect your wallet first.');
+                  } else {
+                    alert('Please connect your wallet first.');
+                  }
+                  setPaymentProcessing(false);
                   return;
                 }
 
-                // Create invoice for 10 stars (default amount)
-                const invoice = await paymentService.createInvoice({
-                  telegramId: userTelegramId,
-                  amount: 10, // Default to 10 stars
-                });
+                // Send TON payment (0.1 TON = 100,000,000 nanoTON)
+                const amountNanoTON = '100000000'; // 0.1 TON
+                const comment = `Fitness App Donation from ${userDisplayName}`;
 
-                // Open invoice using Telegram WebApp
-                if (WebApp?.openInvoice) {
-                  WebApp.openInvoice(invoice.invoiceUrl, (status) => {
-                    if (status === 'paid') {
-                      // Payment successful
-                      if (WebApp?.showAlert) {
-                        WebApp.showAlert('Thank you for your support! 🌟 Your contribution helps us grow and improve the app.');
-                      }
-                    } else if (status === 'failed') {
-                      // Payment failed
-                      if (WebApp?.showAlert) {
-                        WebApp.showAlert('Payment failed. Please try again.');
-                      }
-                    } else if (status === 'cancelled') {
-                      // Payment cancelled - no action needed
+                try {
+                  const result = await sendTransaction(
+                    DONATION_WALLET_ADDRESS,
+                    amountNanoTON,
+                    comment
+                  );
+
+                  // Payment successful
+                  if (result) {
+                    // Track payment analytics - extract transaction hash/ID from result
+                    const txHash = (result as any)?.boc || (result as any)?.transactionId || JSON.stringify(result);
+                    trackPayment(amountNanoTON, txHash);
+
+                    if (WebApp?.showAlert) {
+                      WebApp.showAlert('Thank you for your support! 🌟 Your contribution helps us grow and improve the app.');
+                    } else {
+                      alert('Thank you for your support! 🌟');
                     }
-                  });
-                } else {
-                  // Fallback: open invoice URL in new window (for browser testing)
-                  window.open(invoice.invoiceUrl, '_blank');
+                  }
+                } catch (txError: any) {
+                  // Handle transaction errors
+                  const errorMsg = txError.message || '';
+                  if (errorMsg.includes('rejected') || errorMsg.includes('cancelled') || errorMsg.includes('reject')) {
+                    // User rejected - no need to show error
+                    console.log('Payment cancelled by user');
+                  } else if (errorMsg.includes('not connected')) {
+                    // Wallet disconnected
+                    if (WebApp?.showAlert) {
+                      WebApp.showAlert('Wallet disconnected. Please connect your wallet and try again.');
+                    } else {
+                      alert('Wallet disconnected. Please connect your wallet and try again.');
+                    }
+                  } else {
+                    // Other errors
+                    const displayMsg = errorMsg || 'Payment failed. Please try again.';
+                    if (WebApp?.showAlert) {
+                      WebApp.showAlert(displayMsg);
+                    } else {
+                      alert(displayMsg);
+                    }
+                  }
                 }
-              } catch (error) {
-                console.error('Error creating invoice:', error);
+              } catch (error: any) {
+                console.error('Error processing payment:', error);
+                const errorMsg = error?.message || 'Failed to process payment. Please try again later.';
                 if (WebApp?.showAlert) {
-                  WebApp.showAlert('Failed to create payment. Please try again later.');
+                  WebApp.showAlert(errorMsg);
                 } else {
-                  alert('Failed to create payment. Please try again later.');
+                  alert(errorMsg);
                 }
+              } finally {
+                setPaymentProcessing(false);
               }
             }}
+            disabled={paymentProcessing || walletConnecting}
             style={{
               width: '100%',
-              backgroundColor: colorScheme.button,
+              backgroundColor: paymentProcessing || walletConnecting ? withAlpha(colorScheme.button, 0.6) : colorScheme.button,
               color: colorScheme.buttonText,
               padding: '14px',
               borderRadius: '12px',
-                  fontWeight: 'bold',
+              fontWeight: 'bold',
               border: 'none',
-              cursor: 'pointer',
+              cursor: paymentProcessing || walletConnecting ? 'not-allowed' : 'pointer',
               fontSize: '18px',
               boxShadow: `0 4px 12px ${colorScheme.primary}40`,
+              opacity: paymentProcessing || walletConnecting ? 0.6 : 1,
             }}
           >
-            GIVE US BACK
+            {walletConnecting ? 'Connecting Wallet...' : 
+             paymentProcessing ? 'Processing Payment...' :
+             !connected ? 'Connect Wallet & Support' :
+             'Send 0.1 TON Support'}
           </button>
 
           {/* Workout Count Text */}
