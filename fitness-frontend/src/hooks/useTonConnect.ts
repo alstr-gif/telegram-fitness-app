@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TonConnectUI } from '@tonconnect/ui';
 import { UserRejectsError } from '@tonconnect/sdk';
-import { beginCell } from '@ton/core';
 
 export interface TonConnectState {
   connected: boolean;
@@ -122,14 +121,22 @@ export const useTonConnect = () => {
       // Build TON comment payload if comment is provided
       let payload: string | undefined;
       if (comment) {
-        // Build TON comment cell properly using @ton/core
-        const cell = beginCell()
-          .storeUint(0, 32) // Text comment opcode (0)
-          .storeStringTail(comment) // Comment text
-          .endCell();
-        
-        // Convert cell to hex
-        payload = cell.toBoc().toString('hex');
+        try {
+          // Dynamically import @ton/core to avoid issues at module load time
+          const { beginCell } = await import('@ton/core');
+          // Build TON comment cell properly using @ton/core
+          const cell = beginCell()
+            .storeUint(0, 32) // Text comment opcode (0)
+            .storeStringTail(comment) // Comment text
+            .endCell();
+          
+          // Convert cell to hex
+          payload = cell.toBoc().toString('hex');
+        } catch (coreError) {
+          // If @ton/core fails, skip the comment but continue with transaction
+          console.warn('Failed to encode comment, sending transaction without comment:', coreError);
+          // Continue without payload
+        }
       }
       
       const transaction = {
