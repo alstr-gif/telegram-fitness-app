@@ -118,24 +118,16 @@ export const useTonConnect = () => {
       // validUntil is required - set to 5 minutes from now
       const validUntil = Math.floor(Date.now() / 1000) + 300;
       
-      // Convert comment to hex-encoded payload if provided
-      // TON comment format: 0x00 (comment opcode) + UTF-8 text as hex
-      let payload: string | undefined;
-      if (comment) {
-        const commentBytes = new TextEncoder().encode(comment);
-        // Create hex string: comment opcode (0x00) + comment text as hex
-        const hexComment = Array.from(commentBytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-        payload = '00' + hexComment; // 0x00 is the comment opcode in hex
-      }
+      // For now, omit payload to avoid validation errors
+      // TODO: Implement proper TON comment encoding using @ton/core Cell builder
+      // Comment functionality can be added later once transaction flow is verified
       
       const transaction = {
         messages: [
           {
             address: to,
             amount: amount,
-            ...(payload && { payload }), // Only include payload if comment exists
+            // Payload omitted for now - will add comment support later
           },
         ],
         validUntil: validUntil,
