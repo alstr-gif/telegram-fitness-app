@@ -118,13 +118,16 @@ export const useTonConnect = () => {
       // validUntil is required - set to 5 minutes from now
       const validUntil = Math.floor(Date.now() / 1000) + 300;
       
-      // Convert comment to base64 string if provided
+      // Convert comment to hex-encoded payload if provided
+      // TON comment format: 0x00 (comment opcode) + UTF-8 text as hex
       let payload: string | undefined;
       if (comment) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(comment);
-        // Convert to base64
-        payload = btoa(String.fromCharCode(...data));
+        const commentBytes = new TextEncoder().encode(comment);
+        // Create hex string: comment opcode (0x00) + comment text as hex
+        const hexComment = Array.from(commentBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        payload = '00' + hexComment; // 0x00 is the comment opcode in hex
       }
       
       const transaction = {
@@ -132,7 +135,7 @@ export const useTonConnect = () => {
           {
             address: to,
             amount: amount,
-            payload: payload,
+            ...(payload && { payload }), // Only include payload if comment exists
           },
         ],
         validUntil: validUntil,
