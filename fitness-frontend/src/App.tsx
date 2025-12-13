@@ -77,6 +77,7 @@ function App() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [donationAmount, setDonationAmount] = useState<string>('0.1');
   const [donationAmountError, setDonationAmountError] = useState<string | null>(null);
+  const [showDonationModal, setShowDonationModal] = useState(false);
   
   // Get color scheme
   const colorScheme = useMemo(() => getColorScheme(themeParams), [themeParams]);
@@ -903,171 +904,29 @@ function App() {
             We believe fitness should be free and fun. If you enjoy your workouts, send us some TON — it helps us grow 🌱
           </p>
           
-          {/* Donation Amount Input */}
-          <div style={{
-            marginBottom: '12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px'
-          }}>
-            <label style={{
-              fontSize: '13px',
-              color: primaryTextColor,
-              fontWeight: '500'
-            }}>
-              Donation Amount (TON)
-            </label>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={donationAmount}
-              onChange={(e) => {
-                const value = e.target.value;
-                setDonationAmount(value);
-                setDonationAmountError(null);
-                
-                // Validate amount
-                const numValue = parseFloat(value);
-                if (value && (isNaN(numValue) || numValue < 0.01)) {
-                  setDonationAmountError('Minimum amount is 0.01 TON');
-                } else if (value && numValue > 1000) {
-                  setDonationAmountError('Maximum amount is 1000 TON');
-                } else {
-                  setDonationAmountError(null);
-                }
-              }}
-              disabled={paymentProcessing || walletConnecting}
-              style={{
-                padding: '12px',
-                borderRadius: '8px',
-                border: `1px solid ${donationAmountError ? '#ef4444' : softBorderColor}`,
-                backgroundColor: surfaceColor,
-                color: primaryTextColor,
-                fontSize: '16px',
-                fontFamily: 'inherit',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              placeholder="0.1"
-            />
-            {donationAmountError && (
-              <p style={{
-                fontSize: '12px',
-                color: '#ef4444',
-                margin: 0
-              }}>
-                {donationAmountError}
-              </p>
-            )}
-          </div>
-          
           {/* TON Payment Button */}
           <button 
             className="pressable"
             onClick={async () => {
-              try {
-                setPaymentProcessing(true);
-
-                // If wallet is not connected, connect it first
-                if (!connected) {
-                  try {
-                    await connectWallet();
-                    // After connecting, user needs to click again to send payment
-                    setPaymentProcessing(false);
-                    return;
-                  } catch (connectError: any) {
-                    const errorMsg = connectError.message || 'Failed to connect wallet. Please try again.';
-                    if (WebApp?.showAlert) {
-                      WebApp.showAlert(errorMsg);
-                    } else {
-                      alert(errorMsg);
-                    }
-                    setPaymentProcessing(false);
-                    return;
-                  }
-                }
-
-                // Check wallet is actually connected before sending
-                if (!connected || !walletAddress) {
-                  if (WebApp?.showAlert) {
-                    WebApp.showAlert('Please connect your wallet first.');
-                  } else {
-                    alert('Please connect your wallet first.');
-                  }
-                  setPaymentProcessing(false);
-                  return;
-                }
-
-                // Validate and convert donation amount to nanoTON
-                const amountTON = parseFloat(donationAmount);
-                if (isNaN(amountTON) || amountTON < 0.01 || amountTON > 1000) {
-                  if (WebApp?.showAlert) {
-                    WebApp.showAlert('Please enter a valid amount between 0.01 and 1000 TON');
-                  } else {
-                    alert('Please enter a valid amount between 0.01 and 1000 TON');
-                  }
-                  setPaymentProcessing(false);
-                  return;
-                }
-
-                // Convert TON to nanoTON (1 TON = 1,000,000,000 nanoTON)
-                const amountNanoTON = Math.floor(amountTON * 1000000000).toString();
-                const comment = `Fitness App Donation from ${userDisplayName}`;
-
+              // If wallet is not connected, connect it first
+              if (!connected) {
                 try {
-                  const result = await sendTransaction(
-                    DONATION_WALLET_ADDRESS,
-                    amountNanoTON,
-                    comment
-                  );
-
-                  // Payment successful
-                  if (result) {
-                    // Track payment analytics - extract transaction hash/ID from result
-                    const txHash = (result as any)?.boc || (result as any)?.transactionId || JSON.stringify(result);
-                    trackPayment(amountNanoTON, txHash);
-
-                    if (WebApp?.showAlert) {
-                      WebApp.showAlert('Thank you for your support! 🌟 Your contribution helps us grow and improve the app.');
-                    } else {
-                      alert('Thank you for your support! 🌟');
-                    }
-                  }
-                } catch (txError: any) {
-                  // Handle transaction errors
-                  const errorMsg = txError.message || '';
-                  if (errorMsg.includes('rejected') || errorMsg.includes('cancelled') || errorMsg.includes('reject')) {
-                    // User rejected - no need to show error
-                    console.log('Payment cancelled by user');
-                  } else if (errorMsg.includes('not connected')) {
-                    // Wallet disconnected
-                    if (WebApp?.showAlert) {
-                      WebApp.showAlert('Wallet disconnected. Please connect your wallet and try again.');
-                    } else {
-                      alert('Wallet disconnected. Please connect your wallet and try again.');
-                    }
+                  await connectWallet();
+                  // After connecting, show donation modal
+                  setShowDonationModal(true);
+                } catch (connectError: any) {
+                  const errorMsg = connectError.message || 'Failed to connect wallet. Please try again.';
+                  if (WebApp?.showAlert) {
+                    WebApp.showAlert(errorMsg);
                   } else {
-                    // Other errors
-                    const displayMsg = errorMsg || 'Payment failed. Please try again.';
-                    if (WebApp?.showAlert) {
-                      WebApp.showAlert(displayMsg);
-                    } else {
-                      alert(displayMsg);
-                    }
+                    alert(errorMsg);
                   }
                 }
-              } catch (error: any) {
-                console.error('Error processing payment:', error);
-                const errorMsg = error?.message || 'Failed to process payment. Please try again later.';
-                if (WebApp?.showAlert) {
-                  WebApp.showAlert(errorMsg);
-                } else {
-                  alert(errorMsg);
-                }
-              } finally {
-                setPaymentProcessing(false);
+                return;
               }
+
+              // If wallet is connected, show donation modal
+              setShowDonationModal(true);
             }}
             disabled={paymentProcessing || walletConnecting}
             style={{
@@ -1087,8 +946,247 @@ function App() {
             {walletConnecting ? 'Connecting Wallet...' : 
              paymentProcessing ? 'Processing Payment...' :
              !connected ? 'Connect Wallet & Support' :
-             `Send ${donationAmount || '0.1'} TON Support`}
+             'Support Us'}
           </button>
+
+          {/* Donation Modal */}
+          {showDonationModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px'
+            }} onClick={() => !paymentProcessing && setShowDonationModal(false)}>
+              <div style={{
+                backgroundColor: surfaceColor,
+                borderRadius: '16px',
+                padding: '24px',
+                maxWidth: '400px',
+                width: '100%',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+              }} onClick={(e) => e.stopPropagation()}>
+                <h3 style={{
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  color: primaryTextColor,
+                  marginTop: 0,
+                  marginBottom: '16px'
+                }}>
+                  Support Us 💝
+                </h3>
+
+                <p style={{
+                  fontSize: '14px',
+                  color: secondaryTextColor,
+                  marginBottom: '20px',
+                  lineHeight: '1.5'
+                }}>
+                  Enter the amount you'd like to donate. Every contribution helps us grow and improve the app!
+                </p>
+
+                {/* Donation Amount Input */}
+                <div style={{
+                  marginBottom: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <label style={{
+                    fontSize: '14px',
+                    color: primaryTextColor,
+                    fontWeight: '500'
+                  }}>
+                    Donation Amount (TON)
+                  </label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={donationAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setDonationAmount(value);
+                      setDonationAmountError(null);
+                      
+                      // Validate amount
+                      const numValue = parseFloat(value);
+                      if (value && (isNaN(numValue) || numValue < 0.01)) {
+                        setDonationAmountError('Minimum amount is 0.01 TON');
+                      } else if (value && numValue > 1000) {
+                        setDonationAmountError('Maximum amount is 1000 TON');
+                      } else {
+                        setDonationAmountError(null);
+                      }
+                    }}
+                    disabled={paymentProcessing}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${donationAmountError ? '#ef4444' : softBorderColor}`,
+                      backgroundColor: colorScheme.background,
+                      color: primaryTextColor,
+                      fontSize: '16px',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                    }}
+                    placeholder="0.1"
+                    autoFocus
+                  />
+                  {donationAmountError && (
+                    <p style={{
+                      fontSize: '12px',
+                      color: '#ef4444',
+                      margin: 0
+                    }}>
+                      {donationAmountError}
+                    </p>
+                  )}
+                </div>
+
+                {/* Modal Buttons */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  justifyContent: 'flex-end'
+                }}>
+                  <button
+                    onClick={() => {
+                      setShowDonationModal(false);
+                      setDonationAmountError(null);
+                    }}
+                    disabled={paymentProcessing}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      border: `1px solid ${softBorderColor}`,
+                      backgroundColor: 'transparent',
+                      color: primaryTextColor,
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: paymentProcessing ? 'not-allowed' : 'pointer',
+                      opacity: paymentProcessing ? 0.5 : 1,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="pressable"
+                    onClick={async () => {
+                      try {
+                        setPaymentProcessing(true);
+
+                        // Validate wallet is connected
+                        if (!connected || !walletAddress) {
+                          if (WebApp?.showAlert) {
+                            WebApp.showAlert('Please connect your wallet first.');
+                          } else {
+                            alert('Please connect your wallet first.');
+                          }
+                          setPaymentProcessing(false);
+                          return;
+                        }
+
+                        // Validate and convert donation amount to nanoTON
+                        const amountTON = parseFloat(donationAmount);
+                        if (isNaN(amountTON) || amountTON < 0.01 || amountTON > 1000) {
+                          if (WebApp?.showAlert) {
+                            WebApp.showAlert('Please enter a valid amount between 0.01 and 1000 TON');
+                          } else {
+                            alert('Please enter a valid amount between 0.01 and 1000 TON');
+                          }
+                          setPaymentProcessing(false);
+                          return;
+                        }
+
+                        // Convert TON to nanoTON (1 TON = 1,000,000,000 nanoTON)
+                        const amountNanoTON = Math.floor(amountTON * 1000000000).toString();
+                        const comment = `Fitness App Donation from ${userDisplayName}`;
+
+                        try {
+                          const result = await sendTransaction(
+                            DONATION_WALLET_ADDRESS,
+                            amountNanoTON,
+                            comment
+                          );
+
+                          // Payment successful
+                          if (result) {
+                            // Track payment analytics - extract transaction hash/ID from result
+                            const txHash = (result as any)?.boc || (result as any)?.transactionId || JSON.stringify(result);
+                            trackPayment(amountNanoTON, txHash);
+
+                            // Close modal and show success message
+                            setShowDonationModal(false);
+                            
+                            if (WebApp?.showAlert) {
+                              WebApp.showAlert('Thank you for your support! 🌟 Your contribution helps us grow and improve the app.');
+                            } else {
+                              alert('Thank you for your support! 🌟');
+                            }
+                          }
+                        } catch (txError: any) {
+                          // Handle transaction errors
+                          const errorMsg = txError.message || '';
+                          if (errorMsg.includes('rejected') || errorMsg.includes('cancelled') || errorMsg.includes('reject')) {
+                            // User rejected - no need to show error, just close modal
+                            console.log('Payment cancelled by user');
+                            setShowDonationModal(false);
+                          } else if (errorMsg.includes('not connected')) {
+                            // Wallet disconnected
+                            if (WebApp?.showAlert) {
+                              WebApp.showAlert('Wallet disconnected. Please connect your wallet and try again.');
+                            } else {
+                              alert('Wallet disconnected. Please connect your wallet and try again.');
+                            }
+                          } else {
+                            // Other errors
+                            const displayMsg = errorMsg || 'Payment failed. Please try again.';
+                            if (WebApp?.showAlert) {
+                              WebApp.showAlert(displayMsg);
+                            } else {
+                              alert(displayMsg);
+                            }
+                          }
+                        }
+                      } catch (error: any) {
+                        console.error('Error processing payment:', error);
+                        const errorMsg = error?.message || 'Failed to process payment. Please try again later.';
+                        if (WebApp?.showAlert) {
+                          WebApp.showAlert(errorMsg);
+                        } else {
+                          alert(errorMsg);
+                        }
+                      } finally {
+                        setPaymentProcessing(false);
+                      }
+                    }}
+                    disabled={paymentProcessing || !!donationAmountError}
+                    style={{
+                      padding: '10px 24px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: paymentProcessing || donationAmountError ? withAlpha(colorScheme.button, 0.6) : colorScheme.button,
+                      color: colorScheme.buttonText,
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: paymentProcessing || donationAmountError ? 'not-allowed' : 'pointer',
+                      opacity: paymentProcessing || donationAmountError ? 0.6 : 1,
+                    }}
+                  >
+                    {paymentProcessing ? 'Processing...' : `Send ${donationAmount || '0.1'} TON`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Workout Count Text */}
           <p style={{
