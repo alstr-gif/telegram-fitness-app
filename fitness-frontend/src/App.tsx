@@ -75,6 +75,8 @@ function App() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [donationAmount, setDonationAmount] = useState<string>('0.1');
+  const [donationAmountError, setDonationAmountError] = useState<string | null>(null);
   
   // Get color scheme
   const colorScheme = useMemo(() => getColorScheme(themeParams), [themeParams]);
@@ -901,6 +903,65 @@ function App() {
             We believe fitness should be free and fun. If you enjoy your workouts, send us some TON — it helps us grow 🌱
           </p>
           
+          {/* Donation Amount Input */}
+          <div style={{
+            marginBottom: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <label style={{
+              fontSize: '13px',
+              color: primaryTextColor,
+              fontWeight: '500'
+            }}>
+              Donation Amount (TON)
+            </label>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={donationAmount}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDonationAmount(value);
+                setDonationAmountError(null);
+                
+                // Validate amount
+                const numValue = parseFloat(value);
+                if (value && (isNaN(numValue) || numValue < 0.01)) {
+                  setDonationAmountError('Minimum amount is 0.01 TON');
+                } else if (value && numValue > 1000) {
+                  setDonationAmountError('Maximum amount is 1000 TON');
+                } else {
+                  setDonationAmountError(null);
+                }
+              }}
+              disabled={paymentProcessing || walletConnecting}
+              style={{
+                padding: '12px',
+                borderRadius: '8px',
+                border: `1px solid ${donationAmountError ? '#ef4444' : softBorderColor}`,
+                backgroundColor: surfaceColor,
+                color: primaryTextColor,
+                fontSize: '16px',
+                fontFamily: 'inherit',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              placeholder="0.1"
+            />
+            {donationAmountError && (
+              <p style={{
+                fontSize: '12px',
+                color: '#ef4444',
+                margin: 0
+              }}>
+                {donationAmountError}
+              </p>
+            )}
+          </div>
+          
           {/* TON Payment Button */}
           <button 
             className="pressable"
@@ -938,8 +999,20 @@ function App() {
                   return;
                 }
 
-                // Send TON payment (0.1 TON = 100,000,000 nanoTON)
-                const amountNanoTON = '100000000'; // 0.1 TON
+                // Validate and convert donation amount to nanoTON
+                const amountTON = parseFloat(donationAmount);
+                if (isNaN(amountTON) || amountTON < 0.01 || amountTON > 1000) {
+                  if (WebApp?.showAlert) {
+                    WebApp.showAlert('Please enter a valid amount between 0.01 and 1000 TON');
+                  } else {
+                    alert('Please enter a valid amount between 0.01 and 1000 TON');
+                  }
+                  setPaymentProcessing(false);
+                  return;
+                }
+
+                // Convert TON to nanoTON (1 TON = 1,000,000,000 nanoTON)
+                const amountNanoTON = Math.floor(amountTON * 1000000000).toString();
                 const comment = `Fitness App Donation from ${userDisplayName}`;
 
                 try {
@@ -1014,7 +1087,7 @@ function App() {
             {walletConnecting ? 'Connecting Wallet...' : 
              paymentProcessing ? 'Processing Payment...' :
              !connected ? 'Connect Wallet & Support' :
-             'Send 0.1 TON Support'}
+             `Send ${donationAmount || '0.1'} TON Support`}
           </button>
 
           {/* Workout Count Text */}
