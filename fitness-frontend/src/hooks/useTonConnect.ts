@@ -109,7 +109,7 @@ export const useTonConnect = () => {
     }
   };
 
-  const sendTransaction = async (to: string, amount: string, comment?: string) => {
+  const sendTransaction = async (to: string, amount: string, _comment?: string) => {
     if (!tonConnectUI || !state.connected) {
       throw new Error('Wallet not connected');
     }
