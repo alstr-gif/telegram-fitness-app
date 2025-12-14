@@ -892,7 +892,7 @@ function App() {
             marginBottom: '6px',
             textAlign: 'center'
           }}>
-            GIVE AS BACK
+            SUPPORT US
           </h2>
                   <p style={{
                     fontSize: '12px',
@@ -946,7 +946,7 @@ function App() {
             {walletConnecting ? 'Connecting Wallet...' : 
              paymentProcessing ? 'Processing Payment...' :
              !connected ? 'Connect Wallet & Support' :
-             'GIVE AS BACK'}
+             'GIVE US BACK'}
           </button>
 
           {/* Donation Modal */}
