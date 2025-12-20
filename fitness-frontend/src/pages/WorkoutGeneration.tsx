@@ -65,6 +65,27 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
   
   // Phase 3: Collapsible scaling instructions state (for future use)
   const [_expandedExercises, _setExpandedExercises] = useState<Set<string>>(new Set());
+  
+  // Progress tracking for workout generation
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Track time elapsed during generation
+  useEffect(() => {
+    if (currentStep === 'generating' || loading) {
+      const startTime = Date.now();
+      setElapsedSeconds(0);
+
+      const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setElapsedSeconds(elapsed);
+      }, 100); // Update every 100ms for smooth progress
+
+      return () => {
+        clearInterval(interval);
+        setElapsedSeconds(0);
+      };
+    }
+  }, [currentStep, loading]);
 
   const accent = colorScheme.primary;
   const accentDark = colorScheme.dark;
@@ -671,9 +692,25 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
       }
     };
 
-    const totalSteps = 5;
-    const currentStepIndex = 5;
-    const progress = `${(currentStepIndex / totalSteps) * 100}%`;
+    // Estimated generation time (in seconds) - typically 25-30 seconds
+    const estimatedDuration = 27.5; // Average of 25-30 seconds
+    const maxDuration = 45; // Max seconds before considering it slow
+    
+    // Calculate progress percentage (uses logarithmic curve for realistic feel)
+    // Start slow, accelerate in middle, slow down near end
+    const progressPercentage = Math.min(
+      Math.floor(
+        (elapsedSeconds / maxDuration) * 100 * 
+        (1 - Math.exp(-elapsedSeconds / 10)) // Smooth logarithmic curve
+      ),
+      95 // Cap at 95% until actually complete
+    );
+
+    // Calculate estimated time remaining
+    const remainingSeconds = Math.max(0, Math.ceil(estimatedDuration - elapsedSeconds));
+    const timeRemainingText = remainingSeconds > 0 
+      ? `About ${remainingSeconds} ${remainingSeconds === 1 ? 'second' : 'seconds'} remaining`
+      : 'Almost done...';
 
     return (
       <div style={{
@@ -699,24 +736,39 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
           border: `1px solid ${withAlpha(isDarkTheme ? '#1e293b' : '#d5dceb', 0.6)}`,
         }}>
           <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: withAlpha(textColor, 0.7) }}>
-              Generating
+            <div style={{ 
+              fontSize: '12px', 
+              fontWeight: 600, 
+              color: withAlpha(textColor, 0.7),
+              marginBottom: '8px'
+            }}>
+              Generating your workout
             </div>
             <div style={{
               marginTop: '8px',
               width: '100%',
-              height: '6px',
+              height: '8px',
               borderRadius: '999px',
               backgroundColor: withAlpha(textColor, 0.08),
               overflow: 'hidden',
+              position: 'relative',
             }}>
               <div style={{
-                width: progress,
+                width: `${progressPercentage}%`,
                 height: '100%',
                 borderRadius: '999px',
                 background: `linear-gradient(90deg, ${accent}, ${accentDark})`,
                 transition: 'width 0.3s ease',
+                boxShadow: `0 0 10px ${withAlpha(accent, 0.4)}`,
               }} />
+            </div>
+            <div style={{
+              marginTop: '8px',
+              fontSize: '11px',
+              color: mutedColor,
+              fontWeight: '500',
+            }}>
+              {timeRemainingText}
             </div>
           </div>
 
@@ -793,7 +845,7 @@ export const WorkoutGeneration = ({ telegramId, onBack, colorScheme, userName }:
           </div>
 
           <p style={{ color: withAlpha(textColor, 0.45), fontSize: '13px', marginTop: '20px' }}>
-            Most workouts arrive in 10–15 seconds.
+            Usually takes 25–30 seconds
           </p>
         </div>
       </div>
